@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int              @id @default(autoincrement())
+  name         String
+  email        String           @unique
+  passwordHash String
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  expenses     Expense[]
+  budgets      Budget[]
+  incomes      Income[]
+  goals        Goal[]
+}
+
+model Expense {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  category      String
+  description   String
+  amount        Int
+  date          DateTime
+  paymentMethod String
+  note          String   @default("")
+  zone          String   @default("")
+  latitude      Float?
+  longitude     Float?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@index([userId, category, date])
+}
+
+model Budget {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  year       Int
+  month      Int
+  monthly    Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categories CategoryBudget[]
+
+  @@unique([userId, year, month])
+}
+
+model CategoryBudget {
+  id        Int      @id @default(autoincrement())
+  budgetId  Int
+  category  String
+  amount    Int
+  budget    Budget   @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+
+  @@unique([budgetId, category])
+}
+
+model Income {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  year      Int
+  month     Int
+  amount    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, year, month])
+  @@index([userId, year, month])
+}
+
+model Goal {
+  id        Int            @id @default(autoincrement())
+  userId    Int
+  title     String
+  target    Int
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movements GoalMovement[]
+
+  @@index([userId])
+}
+
+model GoalMovement {
+  id        Int      @id @default(autoincrement())
+  goalId    Int
+  amount    Int
+  type      String
+  date      DateTime @default(now())
+  note      String   @default("")
+  goal      Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@index([goalId, date])
+}

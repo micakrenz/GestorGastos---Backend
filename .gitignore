@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+prisma/*.db
+prisma/*.db-journal
+
+.DS_Store
+Ajuste-backend-objetivos.patch
+.env
+node_modules/
+prisma/dev.db
