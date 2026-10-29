@@ -12,6 +12,7 @@ model User {
   name         String
   email        String           @unique
   passwordHash String
+  onboardingCompleted Boolean   @default(true)
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
   expenses     Expense[]

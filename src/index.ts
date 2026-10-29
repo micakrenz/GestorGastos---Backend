@@ -36,8 +36,9 @@ app.post("/api/auth/register", async (req, res) => {
         name: parsed.data.name || email.split("@")[0],
         email,
         passwordHash: await bcrypt.hash(parsed.data.password, 12),
+        onboardingCompleted: false,
       },
-      select: { id: true, name: true, email: true, createdAt: true },
+      select: { id: true, name: true, email: true, onboardingCompleted: true, createdAt: true },
     });
     const secret = process.env.JWT_SECRET;
     if (!secret) return res.status(500).json({ error: "Falta configurar JWT_SECRET." });
@@ -59,7 +60,7 @@ app.post("/api/auth/login", async (req, res) => {
     const secret = process.env.JWT_SECRET;
     if (!secret) return res.status(500).json({ error: "Falta configurar JWT_SECRET." });
     const token = jwt.sign({}, secret, { subject: String(user.id), expiresIn: "7d" });
-    return res.json({ user: { id: user.id, name: user.name, email: user.email }, token });
+    return res.json({ user: { id: user.id, name: user.name, email: user.email, onboardingCompleted: user.onboardingCompleted }, token });
   } catch {
     return res.status(500).json({ error: "No se pudo iniciar sesión." });
   }
@@ -69,7 +70,7 @@ app.get("/api/profile", requireAuth, async (req: AuthRequest, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.userId! },
-      select: { id: true, name: true, email: true, createdAt: true },
+      select: { id: true, name: true, email: true, onboardingCompleted: true, createdAt: true },
     });
     if (!user) return res.status(404).json({ error: "No se encontró el perfil." });
     return res.json(user);
@@ -82,10 +83,19 @@ app.patch("/api/profile", requireAuth, async (req: AuthRequest, res) => {
   const parsed = z.object({ name: z.string().trim().min(1).max(80) }).safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "El nombre es obligatorio (máximo 80 caracteres)." });
   try {
-    const user = await prisma.user.update({ where: { id: req.userId! }, data: { name: parsed.data.name }, select: { id: true, name: true, email: true } });
+    const user = await prisma.user.update({ where: { id: req.userId! }, data: { name: parsed.data.name }, select: { id: true, name: true, email: true, onboardingCompleted: true } });
     return res.json(user);
   } catch {
     return res.status(500).json({ error: "No se pudo actualizar el perfil." });
+  }
+});
+
+app.post("/api/onboarding/complete", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    await prisma.user.update({ where: { id: req.userId! }, data: { onboardingCompleted: true } });
+    return res.json({ onboardingCompleted: true });
+  } catch {
+    return res.status(500).json({ error: "No se pudo guardar el estado de la guía." });
   }
 });
 
